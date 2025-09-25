@@ -13,7 +13,7 @@ model_list:
       service_tier: "priority"
 
   # Anthropic
-  - model_name: anthropic/claude-sonnet-4-20250514
+  - model_name: anthropic/claude-sonnet-4-20250514-thinking
     litellm_params:
       model: anthropic/claude-sonnet-4-20250514
       api_key: "os.environ/ANTHROPIC_API_KEY"
