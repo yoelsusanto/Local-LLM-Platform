@@ -1,0 +1,68 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:slim
+    container_name: open-webui
+    ports:
+      - "${OPEN_WEBUI_PORT}:8080"
+    environment:
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY}
+      ENABLE_OLLAMA_API: ${OPEN_WEBUI_ENABLE_OLLAMA_API}
+      OPENAI_API_BASE_URL: ${OPEN_WEBUI_OPENAI_API_BASE_URL}
+      OPENAI_API_KEY: ${OPEN_WEBUI_OPENAI_API_KEY}
+      TASK_MODEL_EXTERNAL: ${OPEN_WEBUI_TASK_MODEL_EXTERNAL}
+      ENABLE_FOLLOW_UP_GENERATION: ${OPEN_WEBUI_ENABLE_FOLLOW_UP_GENERATION}
+      ENABLE_AUTOCOMPLETE_GENERATION: ${OPEN_WEBUI_ENABLE_AUTOCOMPLETE_GENERATION}
+    volumes:
+      - ${OPEN_WEBUI_DATA_PATH}:/app/backend/data
+    restart: always
+    depends_on:
+      - litellm
+    networks:
+      - default
+    healthcheck:
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
+
+  postgres-litellm:
+    image: ${POSTGRES_IMAGE}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+    ports:
+      - "5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  litellm:
+    container_name: litellm
+    image: ${LITELLM_IMAGE}
+    restart: always
+    ports:
+      - "${LITELLM_PORT}:4000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-litellm:5432/${POSTGRES_DB}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      OPENAI_API_KEY: ${LITELLM_OPENAI_API_KEY}
+      OPENAI_API_BASE: ${LITELLM_OPENAI_API_BASE}
+      ANTHROPIC_API_KEY: ${LITELLM_ANTHROPIC_API_KEY}
+      ANTHROPIC_API_BASE: ${LITELLM_ANTHROPIC_API_BASE}
+      GEMINI_API_KEY: ${LITELLM_GEMINI_API_KEY}
+      GEMINI_API_BASE: ${LITELLM_GEMINI_API_BASE}
+      PERPLEXITY_API_KEY: ${LITELLM_PERPLEXITY_API_KEY}
+      PERPLEXITY_API_BASE: ${LITELLM_PERPLEXITY_API_BASE}
+    volumes:
+      - ${LITELLM_CONFIG_PATH}:/app/config.yaml
+    command: "--config /app/config.yaml --port 4000"
+    networks:
+      - default
+    depends_on:
+      - postgres-litellm

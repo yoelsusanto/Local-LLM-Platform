@@ -1,0 +1,5 @@
+litellm_postgres_data
+open-webui-data
+*.bak
+.env
+litellm_config.yml
